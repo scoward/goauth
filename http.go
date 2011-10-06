@@ -9,7 +9,6 @@ import (
 	"strings"
 	"bufio"
 	"crypto/tls"
-	"url"
 )
 
 
@@ -17,38 +16,34 @@ import (
 // get Taken from the golang source modifed to allow headers to be passed and no redirection allowed
 func get(url_ string,  headers map[string]string) (r *http.Response, err os.Error) {
 
-	var req http.Request
-	if err != nil { return }
+	req, err := http.NewRequest("GET", url_, nil)
+	if err != nil {
+		return
+	}
 	for k, v := range headers {
 		req.Header.Add(k, v)
 	}
-//	req.Header = headers
-	req.URL, err = url.Parse(url_)
 
-	r, err = send(&req)
+	r, err = send(req)
 	if err != nil { return }
 	return
 }
 
 // post taken from Golang modified to allow Headers to be pased
 func post(url_ string, headers map[string]string, body io.Reader) (r *http.Response, err os.Error) {
-    var req http.Request
-    req.Method = "POST"
+	req, err := http.NewRequest("POST", url_, nopCloser{body})
+	if err != nil {
+		return
+	}
     req.ProtoMajor = 1
     req.ProtoMinor = 1
     req.Close = true
-    req.Body = nopCloser{body}
 	for k, v := range headers {
 		req.Header.Add(k, v)
 	}
     req.TransferEncoding = []string{"chunked"}
 
-    req.URL, err = url.Parse(url_)
-    if err != nil {
-        return nil, err
-    }
-
-    return send(&req)
+    return send(req)
 }
 
 // Copyright (c) 2009 The Go Authors. All rights reserved.

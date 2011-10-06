@@ -9,12 +9,13 @@ import (
 	"strings"
 	"bufio"
 	"crypto/tls"
+	"url"
 )
 
 
 
 // get Taken from the golang source modifed to allow headers to be passed and no redirection allowed
-func get(url string,  headers map[string]string) (r *http.Response, err os.Error) {
+func get(url_ string,  headers map[string]string) (r *http.Response, err os.Error) {
 
 	var req http.Request
 	if err != nil { return }
@@ -22,7 +23,7 @@ func get(url string,  headers map[string]string) (r *http.Response, err os.Error
 		req.Header.Add(k, v)
 	}
 //	req.Header = headers
-	req.URL, err = http.ParseURL(url)
+	req.URL, err = url.Parse(url_)
 
 	r, err = send(&req)
 	if err != nil { return }
@@ -30,7 +31,7 @@ func get(url string,  headers map[string]string) (r *http.Response, err os.Error
 }
 
 // post taken from Golang modified to allow Headers to be pased
-func post(url string, headers map[string]string, body io.Reader) (r *http.Response, err os.Error) {
+func post(url_ string, headers map[string]string, body io.Reader) (r *http.Response, err os.Error) {
     var req http.Request
     req.Method = "POST"
     req.ProtoMajor = 1
@@ -42,7 +43,7 @@ func post(url string, headers map[string]string, body io.Reader) (r *http.Respon
 	}
     req.TransferEncoding = []string{"chunked"}
 
-    req.URL, err = http.ParseURL(url)
+    req.URL, err = url.Parse(url_)
     if err != nil {
         return nil, err
     }

@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=github.com/hokapoka/goauth
+TARG=github.com/akrennmair/goauth
 GOFILES=\
 	urlencode.go\
 	token.go\

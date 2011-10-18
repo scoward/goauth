@@ -23,10 +23,10 @@ type OAuthConsumer struct{
 	ConsumerKey string
 	ConsumerSecret string
 	CallBackURL string
+	UserAgent string
 	requestTokens []*RequestToken
 	AdditionalParams Params
 }
-
 
 // GetRequestAuthorizationURL Returns the URL for the visitor to Authorize the Access
 func (oc *OAuthConsumer) GetRequestAuthorizationURL() (string, *RequestToken, os.Error){
@@ -81,6 +81,7 @@ func (oc *OAuthConsumer) GetRequestAuthorizationURL() (string, *RequestToken, os
 	headers := map[string]string{
 		"Content-Type":"text/plain",
 		"Authorization":authHeader,
+		"User-Agent":oc.UserAgent,
 	}
 
     lAddParams := len(oc.AdditionalParams)
@@ -196,6 +197,7 @@ func (oc *OAuthConsumer) GetAccessToken(token string, verifier string, ) *Access
 	headers := map[string]string{
 		"Content-Type":"application/x-www-form-urlencoded",
 		"Authorization":authHeader,
+		"User-Agent":oc.UserAgent,
 	}
 
 	// Action the POST to get the AccessToken
@@ -310,6 +312,7 @@ func (oc *OAuthConsumer) oAuthRequest( url string, fparams Params, at *AccessTok
 	buf := bytes.NewBufferString(fparamsStr)
 	headers := map[string]string{
 		"Authorization":authHeader,
+		"User-Agent":oc.UserAgent,
 	}
 
 	if method == "GET" {

@@ -97,9 +97,13 @@ func send(req *http.Request) (resp *http.Response, err os.Error) {
 */
     var conn io.ReadWriteCloser
     if req.URL.Scheme == "http" {
-        conn, err = net.Dial("tcp", addr)
+		conn_, err_ := net.Dial("tcp", addr)
+		conn_.SetTimeout(60e9)
+		conn, err = conn_, err_
     } else { // https
-        conn, err = tls.Dial("tcp", addr, nil)
+		conn_, err_ := tls.Dial("tcp", addr, nil)
+		conn_.SetTimeout(60e9)
+		conn, err = conn_, err_
     }
     if err != nil {
         return nil, err

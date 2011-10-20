@@ -14,7 +14,7 @@ import (
 
 
 // get Taken from the golang source modifed to allow headers to be passed and no redirection allowed
-func get(url_ string,  headers map[string]string) (r *http.Response, err os.Error) {
+func get(url_ string,  headers map[string]string, timeout int64) (r *http.Response, err os.Error) {
 
 	req, err := http.NewRequest("GET", url_, nil)
 	if err != nil {
@@ -24,13 +24,13 @@ func get(url_ string,  headers map[string]string) (r *http.Response, err os.Erro
 		req.Header.Add(k, v)
 	}
 
-	r, err = send(req)
+	r, err = send(req, timeout)
 	if err != nil { return }
 	return
 }
 
 // post taken from Golang modified to allow Headers to be pased
-func post(url_ string, headers map[string]string, body io.Reader) (r *http.Response, err os.Error) {
+func post(url_ string, headers map[string]string, body io.Reader, timeout int64) (r *http.Response, err os.Error) {
 	req, err := http.NewRequest("POST", url_, nopCloser{body})
 	if err != nil {
 		return
@@ -43,7 +43,7 @@ func post(url_ string, headers map[string]string, body io.Reader) (r *http.Respo
 	}
     req.TransferEncoding = []string{"chunked"}
 
-    return send(req)
+    return send(req, timeout)
 }
 
 // Copyright (c) 2009 The Go Authors. All rights reserved.
@@ -75,7 +75,7 @@ type readClose struct {
     io.Closer
 }
 
-func send(req *http.Request) (resp *http.Response, err os.Error) {
+func send(req *http.Request, timeout int64) (resp *http.Response, err os.Error) {
     if req.URL.Scheme != "http" && req.URL.Scheme != "https" {
         return nil, nil
     }
@@ -98,11 +98,15 @@ func send(req *http.Request) (resp *http.Response, err os.Error) {
     var conn io.ReadWriteCloser
     if req.URL.Scheme == "http" {
 		conn_, err_ := net.Dial("tcp", addr)
-		conn_.SetTimeout(60e9)
+		if conn_ != nil && timeout > 0 {
+			conn_.SetTimeout(timeout)
+		}
 		conn, err = conn_, err_
     } else { // https
 		conn_, err_ := tls.Dial("tcp", addr, nil)
-		conn_.SetTimeout(60e9)
+		if conn_ != nil && timeout > 0 {
+			conn_.SetTimeout(timeout)
+		}
 		conn, err = conn_, err_
     }
     if err != nil {

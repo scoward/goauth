@@ -24,6 +24,7 @@ type OAuthConsumer struct{
 	ConsumerSecret string
 	CallBackURL string
 	UserAgent string
+	Timeout int64
 	requestTokens []*RequestToken
 	AdditionalParams Params
 }
@@ -89,7 +90,7 @@ func (oc *OAuthConsumer) GetRequestAuthorizationURL() (string, *RequestToken, os
 		oc.RequestTokenURL += "?" + string(buf.Bytes())
 	}
 
-	r, err := get(oc.RequestTokenURL, headers)
+	r, err := get(oc.RequestTokenURL, headers, oc.Timeout)
 
 	if err != nil {
 		return "", nil, err
@@ -201,7 +202,7 @@ func (oc *OAuthConsumer) GetAccessToken(token string, verifier string, ) *Access
 	}
 
 	// Action the POST to get the AccessToken
-	r, err :=  post(oc.AccessTokenURL, headers, buf)
+	r, err :=  post(oc.AccessTokenURL, headers, buf, oc.Timeout)
 
 	if err != nil {
 		fmt.Println(err.String())
@@ -317,11 +318,11 @@ func (oc *OAuthConsumer) oAuthRequest( url string, fparams Params, at *AccessTok
 
 	if method == "GET" {
 		// return Get response
-		return get(url + "?" + fparamsStr, headers)
+		return get(url + "?" + fparamsStr, headers, oc.Timeout)
 	}
 
 	// return POSTs response
-	return post(url, headers, buf)
+	return post(url, headers, buf, oc.Timeout)
 
 }
 

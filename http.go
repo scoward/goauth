@@ -4,10 +4,10 @@ import (
 	"io"
 	"net"
 	"net/http"
-	//	"encoding/base64"
 	"bufio"
 	"crypto/tls"
 	"strings"
+	"time"
 )
 
 // get Taken from the golang source modifed to allow headers to be passed and no redirection allowed
@@ -96,16 +96,16 @@ func send(req *http.Request, timeout int64) (resp *http.Response, err error) {
 	*/
 	var conn io.ReadWriteCloser
 	if req.URL.Scheme == "http" {
-		conn_, err_ := net.Dial("tcp", addr)
-		if conn_ != nil && timeout > 0 {
-			conn_.SetTimeout(timeout)
+		if timeout > 0 {
+			conn_, err_ := net.DialTimeout("tcp", addr, time.Duration(timeout))
+			conn, err = conn_, err_
+		} else {
+			conn_, err_ := net.Dial("tcp", addr)
+			conn, err = conn_, err_
 		}
-		conn, err = conn_, err_
 	} else { // https
 		conn_, err_ := tls.Dial("tcp", addr, nil)
-		if conn_ != nil && timeout > 0 {
-			conn_.SetTimeout(timeout)
-		}
+		//conn_.SetReadDeadline(time.Time(timeout)) // XXX TODO: what the hell is this interface?! time.Time for a timeout?!
 		conn, err = conn_, err_
 	}
 	if err != nil {

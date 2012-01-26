@@ -36,7 +36,7 @@ func (oc *OAuthConsumer) GetRequestAuthorizationURL() (string, *RequestToken, er
 
 	// Add required OAuth params
 	p.Add(&Pair{Key: "oauth_version", Value: "1.0"})
-	p.Add(&Pair{Key: "oauth_timestamp", Value: strconv.FormatInt(time.Now(), 10)})
+	p.Add(&Pair{Key: "oauth_timestamp", Value: strconv.FormatInt(time.Now().Unix(), 10)})
 	p.Add(&Pair{Key: "oauth_consumer_key", Value: oc.ConsumerKey})
 	p.Add(&Pair{Key: "oauth_callback", Value: oc.CallBackURL})
 	p.Add(&Pair{Key: "oauth_nonce", Value: strconv.FormatInt(rand.Int63(), 10)})
@@ -162,7 +162,7 @@ func (oc *OAuthConsumer) GetAccessToken(token string, verifier string) *AccessTo
 	p.Add(&Pair{Key: "oauth_token", Value: rt.Token})
 	p.Add(&Pair{Key: "oauth_verifier", Value: rt.Verifier})
 	p.Add(&Pair{Key: "oauth_signature_method", Value: "HMAC-SHA1"})
-	p.Add(&Pair{Key: "oauth_timestamp", Value: strconv.FormatInt(time.Now(), 10)})
+	p.Add(&Pair{Key: "oauth_timestamp", Value: strconv.FormatInt(time.Now().Unix(), 10)})
 	p.Add(&Pair{Key: "oauth_nonce", Value: strconv.FormatInt(rand.Int63(), 10)})
 	p.Add(&Pair{Key: "oauth_version", Value: "1.0"})
 
@@ -269,7 +269,7 @@ func (oc *OAuthConsumer) oAuthRequest(url string, fparams Params, at *AccessToke
 	p.Add(&Pair{Key: "oauth_token", Value: at.Token})
 	p.Add(&Pair{Key: "oauth_signature_method", Value: "HMAC-SHA1"})
 	p.Add(&Pair{Key: "oauth_consumer_key", Value: oc.ConsumerKey})
-	p.Add(&Pair{Key: "oauth_timestamp", Value: strconv.FormatInt(time.Now(), 10)})
+	p.Add(&Pair{Key: "oauth_timestamp", Value: strconv.FormatInt(time.Now().Unix(), 10)})
 	p.Add(&Pair{Key: "oauth_nonce", Value: strconv.FormatInt(rand.Int63(), 10)})
 	p.Add(&Pair{Key: "oauth_version", Value: "1.0"})
 

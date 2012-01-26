@@ -25,7 +25,7 @@ package main
 
 import (
 	"github.com/hoisie/web.go"
-	oauth "github.com/hokapoka/goauth"
+	oauth "github.com/akrennmair/goauth"
 	"io/ioutil"
 	"net/http"
 )

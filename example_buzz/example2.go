@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"github.com/hoisie/web.go"
-	oauth "github.com/hokapoka/goauth"
+	oauth "github.com/akrennmair/goauth"
 	"gobuzz" // github.com/hokapoka/gobuzz
 	"io/ioutil"
 	"net/http"

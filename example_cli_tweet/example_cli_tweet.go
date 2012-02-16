@@ -10,7 +10,7 @@
 package main
 
 import (
-	oauth "github.com/hokapoka/goauth"
+	oauth "github.com/akrennmair/goauth"
 	"fmt"
 )
 

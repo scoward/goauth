@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"strings"
 	"time"
+	"log"
 )
 
 // get Taken from the golang source modifed to allow headers to be passed and no redirection allowed
@@ -78,9 +79,12 @@ type TimeoutReaderCloser struct {
 func(r *TimeoutReaderCloser) Read(b []byte) (int, error) {
 	size, err := r.R.Read(b)
 	if err != nil {
+		log.Printf("TimeoutReaderCloser: Read error: %v", err)
 		return size, err
 	}
-	r.C.SetReadDeadline(time.Now().Add(time.Duration(r.T * 1e9)))
+	t := time.Now().Add(time.Duration(r.T * 1e9))
+	log.Printf("setting read deadline to %v", t)
+	r.C.SetReadDeadline(t)
 	return size, err
 }
 
@@ -109,19 +113,18 @@ func send(req *http.Request, timeout int64) (resp *http.Response, err error) {
 	  }
 	*/
 	var conn net.Conn
+	log.Printf("send: addr = %v", addr)
 	if req.URL.Scheme == "http" {
 		if timeout > 0 {
-			conn_, err_ := net.DialTimeout("tcp", addr, time.Duration(timeout))
-			conn, err = conn_, err_
+			conn, err = net.DialTimeout("tcp", addr, time.Duration(timeout * 1e9))
 		} else {
-			conn_, err_ := net.Dial("tcp", addr)
-			conn, err = conn_, err_
+			conn, err = net.Dial("tcp", addr)
 		}
 	} else { // https
-		conn_, err_ := tls.Dial("tcp", addr, nil)
-		conn, err = conn_, err_
+		conn, err = tls.Dial("tcp", addr, nil)
 	}
 	if err != nil {
+		log.Printf("send: Dial error: %v", err)
 		return nil, err
 	}
 

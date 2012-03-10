@@ -69,9 +69,23 @@ type nopCloser struct {
 
 func (nopCloser) Close() error { return nil }
 
-type readClose struct {
-	io.Reader
-	io.Closer
+type TimeoutReaderCloser struct {
+	R io.Reader
+	C net.Conn
+	T int64
+}
+
+func(r *TimeoutReaderCloser) Read(b []byte) (int, error) {
+	size, err := r.R.Read(b)
+	if err != nil {
+		return size, err
+	}
+	r.C.SetReadDeadline(time.Now().Add(time.Duration(r.T * 1e9)))
+	return size, err
+}
+
+func (r *TimeoutReaderCloser) Close() error {
+	return r.C.Close()
 }
 
 func send(req *http.Request, timeout int64) (resp *http.Response, err error) {
@@ -94,7 +108,7 @@ func send(req *http.Request, timeout int64) (resp *http.Response, err error) {
 	      req.Header["Authorization"] = "Basic " + string(encoded)
 	  }
 	*/
-	var conn io.ReadWriteCloser
+	var conn net.Conn
 	if req.URL.Scheme == "http" {
 		if timeout > 0 {
 			conn_, err_ := net.DialTimeout("tcp", addr, time.Duration(timeout))
@@ -105,12 +119,13 @@ func send(req *http.Request, timeout int64) (resp *http.Response, err error) {
 		}
 	} else { // https
 		conn_, err_ := tls.Dial("tcp", addr, nil)
-		//conn_.SetReadDeadline(time.Time(timeout)) // XXX TODO: what the hell is this interface?! time.Time for a timeout?!
 		conn, err = conn_, err_
 	}
 	if err != nil {
 		return nil, err
 	}
+
+	conn.SetReadDeadline(time.Now().Add(time.Duration(timeout * 1e9)))
 
 	err = req.Write(conn)
 	if err != nil {
@@ -125,7 +140,7 @@ func send(req *http.Request, timeout int64) (resp *http.Response, err error) {
 		return nil, err
 	}
 
-	resp.Body = readClose{resp.Body, conn}
+	resp.Body = &TimeoutReaderCloser{R: resp.Body, C: conn, T: timeout}
 
 	return
 }

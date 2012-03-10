@@ -82,7 +82,7 @@ func(r *TimeoutReaderCloser) Read(b []byte) (int, error) {
 		log.Printf("TimeoutReaderCloser: Read error: %v", err)
 		return size, err
 	}
-	t := time.Now().Add(time.Duration(r.T * 1e9))
+	t := time.Now().Add(time.Duration(r.T))
 	log.Printf("setting read deadline to %v", t)
 	r.C.SetReadDeadline(t)
 	return size, err
@@ -128,7 +128,7 @@ func send(req *http.Request, timeout int64) (resp *http.Response, err error) {
 		return nil, err
 	}
 
-	conn.SetReadDeadline(time.Now().Add(time.Duration(timeout * 1e9)))
+	conn.SetReadDeadline(time.Now().Add(time.Duration(timeout)))
 
 	err = req.Write(conn)
 	if err != nil {

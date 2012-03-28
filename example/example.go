@@ -24,26 +24,25 @@
 package main
 
 import (
-	oauth "github.com/akrennmair/goauth"
 	"github.com/hoisie/web.go"
-	"http"
+	oauth "github.com/akrennmair/goauth"
 	"io/ioutil"
+	"net/http"
 )
 
 var goauthcon *oauth.OAuthConsumer
 var AT *oauth.AccessToken
 
-func main(){
+func main() {
 
 	goauthcon = &oauth.OAuthConsumer{
-		Service:"twitter",
-		RequestTokenURL:"http://twitter.com/oauth/request_token",
-		AccessTokenURL:"http://twitter.com/oauth/access_token",
-		AuthorizationURL:"http://twitter.com/oauth/authorize",
-		ConsumerKey:"change me",
-		ConsumerSecret:"change me",
-		CallBackURL:"http://changeme.hokapoka.com/callback/twitter",
-
+		Service:          "twitter",
+		RequestTokenURL:  "http://twitter.com/oauth/request_token",
+		AccessTokenURL:   "http://twitter.com/oauth/access_token",
+		AuthorizationURL: "http://twitter.com/oauth/authorize",
+		ConsumerKey:      "change me",
+		ConsumerSecret:   "change me",
+		CallBackURL:      "http://changeme.hokapoka.com/callback/twitter",
 	}
 
 	web.Get("/signin/twitter(.*)", twitterSignIn)
@@ -66,7 +65,6 @@ func twitterSignIn(ctx *web.Context, name string) {
 	ctx.Redirect(http.StatusFound, s)
 }
 
-
 func twitterCallback(ctx *web.Context, name string) {
 	if getParam(ctx, "denied") != "" {
 		ctx.WriteString("<h1>OAuth Access Denied</h1>")
@@ -84,7 +82,7 @@ func twitterCallback(ctx *web.Context, name string) {
 	defer func() { footer(ctx) }()
 }
 
-func twitterVerifyCredentials(ctx *web.Context, name string){
+func twitterVerifyCredentials(ctx *web.Context, name string) {
 
 	ctx.WriteString("<h1>Twitter Credentials</h1>")
 	if AT == nil {
@@ -98,25 +96,23 @@ func twitterVerifyCredentials(ctx *web.Context, name string){
 	r, err := goauthcon.Get(
 		"http://api.twitter.com/1/account/verify_credentials.json",
 		nil,
-		AT )
+		AT)
 
 	if err != nil {
 		ctx.WriteString("<p style=\"color:red\">Error : " + err.String() + "</p>")
 		return
 	}
 
-	b, _ := ioutil.ReadAll( r.Body ) 
+	b, _ := ioutil.ReadAll(r.Body)
 
 	ctx.WriteString("<h2>Twitter Response</h2>")
 	ctx.WriteString("<textarea rows=\"20\" cols=\"60\">")
 	ctx.Write(b)
 	ctx.WriteString("</textarea>")
 
-
-
 }
 
-func twitterHomeTimeLine(ctx *web.Context, name string){
+func twitterHomeTimeLine(ctx *web.Context, name string) {
 
 	ctx.WriteString("<h1>Twitter Home Time Line</h1>")
 	if AT == nil {
@@ -130,24 +126,23 @@ func twitterHomeTimeLine(ctx *web.Context, name string){
 	r, err := goauthcon.Get(
 		"http://api.twitter.com/1/statuses/home_timeline.json",
 		nil,
-		AT )
+		AT)
 
 	if err != nil {
 		ctx.WriteString("<p style=\"color:red\">Error : " + err.String() + "</p>")
 		return
 	}
 
-	b, _ := ioutil.ReadAll( r.Body ) 
+	b, _ := ioutil.ReadAll(r.Body)
 
 	ctx.WriteString("<h2>Twitter Response</h2>")
 	ctx.WriteString("<textarea rows=\"20\" cols=\"60\">")
 	ctx.Write(b)
 	ctx.WriteString("</textarea>")
 
-
 }
 
-func twitterUpdateStatus(ctx *web.Context, name string){
+func twitterUpdateStatus(ctx *web.Context, name string) {
 
 	ctx.WriteString("<h1>Twiiter Status Update</h1>")
 	if AT == nil {
@@ -161,48 +156,43 @@ func twitterUpdateStatus(ctx *web.Context, name string){
 	r, err := goauthcon.Post(
 		"http://api.twitter.com/1/statuses/update.json",
 		oauth.Params{
-			&oauth.Pair{Key:"status", Value:"Testing Status Update via GOAuth - OAuth consumer for #Golang"},
+			&oauth.Pair{Key: "status", Value: "Testing Status Update via GOAuth - OAuth consumer for #Golang"},
 		},
-		AT )
+		AT)
 
 	if err != nil {
 		ctx.WriteString("<p style=\"color:red\">Error : " + err.String() + "</p>")
 		return
 	}
 
-	b, _ := ioutil.ReadAll( r.Body ) 
+	b, _ := ioutil.ReadAll(r.Body)
 
 	ctx.WriteString("<h2>Twitter Response</h2>")
 	ctx.WriteString("<textarea rows=\"5\" cols=\"30\">")
 	ctx.Write(b)
 	ctx.WriteString("</textarea>")
 
-
 }
-
 
 func noRespond(ctx *web.Context, name string) {
 	ctx.WriteString("<h1>Testing OAuth With GoLang</h1>")
 }
 
-func footer(ctx *web.Context){
+func footer(ctx *web.Context) {
 	ctx.WriteString("<p>Click Here <a href=\"/twitter/updatestatus\">to update your twitter status</a></p>")
 	ctx.WriteString("<p>Click here <a href=\"/twitter/hometimeline\">to view home timeline</a></p>")
 	ctx.WriteString("<p>Click here <a href=\"/twitter/credentials\">to verify your credentials</a></p>")
 }
 
-
-func getParam(ctx *web.Context, param string) (v string){
+func getParam(ctx *web.Context, param string) (v string) {
 
 	c, ok := ctx.Request.Params[param]
 
-	if !ok { return }
-	
+	if !ok {
+		return
+	}
+
 	v = c
 
 	return
 }
-
-
-
-

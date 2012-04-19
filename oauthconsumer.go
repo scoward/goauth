@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
+	"crypto/rand"
+  "math/big"
+  "math"
 	"net/http"
 	"sort"
 	"strconv"
@@ -39,7 +41,11 @@ func (oc *OAuthConsumer) GetRequestAuthorizationURL() (string, *RequestToken, er
 	p.Add(&Pair{Key: "oauth_timestamp", Value: strconv.FormatInt(time.Now().Unix(), 10)})
 	p.Add(&Pair{Key: "oauth_consumer_key", Value: oc.ConsumerKey})
 	p.Add(&Pair{Key: "oauth_callback", Value: oc.CallBackURL})
-	p.Add(&Pair{Key: "oauth_nonce", Value: strconv.FormatInt(rand.Int63(), 10)})
+	nounce, err := rand.Int(rand.Reader,big.NewInt(math.MaxInt64))
+	if err != nil{
+	  return "", nil, err
+	}
+	p.Add(&Pair{Key: "oauth_nonce", Value: nounce.String()})
 	p.Add(&Pair{Key: "oauth_signature_method", Value: "HMAC-SHA1"})
 
 	// Sort the collection
@@ -141,7 +147,6 @@ func (oc *OAuthConsumer) GetRequestAuthorizationURL() (string, *RequestToken, er
 
 // GetAccessToken gets the access token for the response from the Authorization URL
 func (oc *OAuthConsumer) GetAccessToken(token string, verifier string) *AccessToken {
-
 	var rt *RequestToken
 
 	// Match the RequestToken by Token
@@ -163,7 +168,11 @@ func (oc *OAuthConsumer) GetAccessToken(token string, verifier string) *AccessTo
 	p.Add(&Pair{Key: "oauth_verifier", Value: rt.Verifier})
 	p.Add(&Pair{Key: "oauth_signature_method", Value: "HMAC-SHA1"})
 	p.Add(&Pair{Key: "oauth_timestamp", Value: strconv.FormatInt(time.Now().Unix(), 10)})
-	p.Add(&Pair{Key: "oauth_nonce", Value: strconv.FormatInt(rand.Int63(), 10)})
+	nounce, err := rand.Int(rand.Reader,big.NewInt(math.MaxInt64))
+	if err != nil{
+	  return nil
+	}
+	p.Add(&Pair{Key: "oauth_nonce", Value: nounce.String()})
 	p.Add(&Pair{Key: "oauth_version", Value: "1.0"})
 
 	// Sort the collection
@@ -270,7 +279,11 @@ func (oc *OAuthConsumer) oAuthRequest(url string, fparams Params, at *AccessToke
 	p.Add(&Pair{Key: "oauth_signature_method", Value: "HMAC-SHA1"})
 	p.Add(&Pair{Key: "oauth_consumer_key", Value: oc.ConsumerKey})
 	p.Add(&Pair{Key: "oauth_timestamp", Value: strconv.FormatInt(time.Now().Unix(), 10)})
-	p.Add(&Pair{Key: "oauth_nonce", Value: strconv.FormatInt(rand.Int63(), 10)})
+	nounce, err := rand.Int(rand.Reader,big.NewInt(math.MaxInt64))
+	if err != nil{
+	  return nil, err
+	}
+	p.Add(&Pair{Key: "oauth_nonce", Value: nounce.String()})
 	p.Add(&Pair{Key: "oauth_version", Value: "1.0"})
 
 	// Add the params to the Header collection

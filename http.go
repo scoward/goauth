@@ -8,7 +8,6 @@ import (
 	"crypto/tls"
 	"strings"
 	"time"
-	"log"
 )
 
 // get Taken from the golang source modifed to allow headers to be passed and no redirection allowed
@@ -30,8 +29,9 @@ func get(url_ string, headers map[string]string, timeout int64) (r *http.Respons
 }
 
 // post taken from Golang modified to allow Headers to be pased
-func post(url_ string, headers map[string]string, body io.Reader, timeout int64) (r *http.Response, err error) {
+func post(url_ string, headers map[string]string, body io.Reader, timeout int64, size int) (r *http.Response, err error) {
 	req, err := http.NewRequest("POST", url_, nopCloser{body})
+	req.ContentLength = int64(size)
 	if err != nil {
 		return
 	}
@@ -41,7 +41,6 @@ func post(url_ string, headers map[string]string, body io.Reader, timeout int64)
 	for k, v := range headers {
 		req.Header.Add(k, v)
 	}
-	req.TransferEncoding = []string{"chunked"}
 
 	return send(req, timeout)
 }
@@ -79,11 +78,9 @@ type TimeoutReaderCloser struct {
 func(r *TimeoutReaderCloser) Read(b []byte) (int, error) {
 	size, err := r.R.Read(b)
 	if err != nil {
-		log.Printf("TimeoutReaderCloser: Read error: %v", err)
 		return size, err
 	}
 	t := time.Now().Add(time.Duration(r.T))
-	log.Printf("setting read deadline to %v", t)
 	r.C.SetReadDeadline(t)
 	return size, err
 }
@@ -113,7 +110,6 @@ func send(req *http.Request, timeout int64) (resp *http.Response, err error) {
 	  }
 	*/
 	var conn net.Conn
-	log.Printf("send: addr = %v", addr)
 	if req.URL.Scheme == "http" {
 		if timeout > 0 {
 			conn, err = net.DialTimeout("tcp", addr, time.Duration(timeout * 1e9))
@@ -123,8 +119,8 @@ func send(req *http.Request, timeout int64) (resp *http.Response, err error) {
 	} else { // https
 		conn, err = tls.Dial("tcp", addr, nil)
 	}
+
 	if err != nil {
-		log.Printf("send: Dial error: %v", err)
 		return nil, err
 	}
 

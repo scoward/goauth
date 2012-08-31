@@ -48,4 +48,3 @@ func isEncodable(c byte) bool {
 	}
 	return true
 }
-

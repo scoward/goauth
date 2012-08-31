@@ -3,20 +3,20 @@ package oauth
 import (
 	"bytes"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha1"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
-	"crypto/rand"
-  	"math/big"
-  	"math"
+	"math"
+	"math/big"
+	"mime/multipart"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-	"mime/multipart"
-	"io"
 )
 
 type OAuthConsumer struct {
@@ -43,9 +43,9 @@ func (oc *OAuthConsumer) GetRequestAuthorizationURL() (string, *RequestToken, er
 	p.Add(&Pair{Key: "oauth_timestamp", Value: strconv.FormatInt(time.Now().Unix(), 10)})
 	p.Add(&Pair{Key: "oauth_consumer_key", Value: oc.ConsumerKey})
 	p.Add(&Pair{Key: "oauth_callback", Value: oc.CallBackURL})
-	nounce, err := rand.Int(rand.Reader,big.NewInt(math.MaxInt64))
-	if err != nil{
-	  return "", nil, err
+	nounce, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
+	if err != nil {
+		return "", nil, err
 	}
 	p.Add(&Pair{Key: "oauth_nonce", Value: nounce.String()})
 	p.Add(&Pair{Key: "oauth_signature_method", Value: "HMAC-SHA1"})
@@ -170,9 +170,9 @@ func (oc *OAuthConsumer) GetAccessToken(token string, verifier string) *AccessTo
 	p.Add(&Pair{Key: "oauth_verifier", Value: rt.Verifier})
 	p.Add(&Pair{Key: "oauth_signature_method", Value: "HMAC-SHA1"})
 	p.Add(&Pair{Key: "oauth_timestamp", Value: strconv.FormatInt(time.Now().Unix(), 10)})
-	nounce, err := rand.Int(rand.Reader,big.NewInt(math.MaxInt64))
-	if err != nil{
-	  return nil
+	nounce, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
+	if err != nil {
+		return nil
 	}
 	p.Add(&Pair{Key: "oauth_nonce", Value: nounce.String()})
 	p.Add(&Pair{Key: "oauth_version", Value: "1.0"})
@@ -218,7 +218,7 @@ func (oc *OAuthConsumer) GetAccessToken(token string, verifier string) *AccessTo
 	}
 
 	// Action the POST to get the AccessToken
-	r, err := post(oc.AccessTokenURL, headers, buf, oc.Timeout,buf.Len())
+	r, err := post(oc.AccessTokenURL, headers, buf, oc.Timeout, buf.Len())
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -269,13 +269,13 @@ func (oc *OAuthConsumer) Post(url string, fparams Params, at *AccessToken) (r *h
 	return oc.oAuthRequest(url, fparams, at, "POST")
 }
 
-type PostFileContent struct{
-  Name string
-  Reader io.Reader
+type PostFileContent struct {
+	Name   string
+	Reader io.Reader
 }
 
-func (oc *OAuthConsumer) PostFile(url string, fparams Params,files map[string]PostFileContent, at *AccessToken) (r *http.Response, err error) {
-  
+func (oc *OAuthConsumer) PostFile(url string, fparams Params, files map[string]PostFileContent, at *AccessToken) (r *http.Response, err error) {
+
 	// Gather the params
 	p := fparams
 
@@ -286,9 +286,9 @@ func (oc *OAuthConsumer) PostFile(url string, fparams Params,files map[string]Po
 	p.Add(&Pair{Key: "oauth_signature_method", Value: "HMAC-SHA1"})
 	p.Add(&Pair{Key: "oauth_consumer_key", Value: oc.ConsumerKey})
 	p.Add(&Pair{Key: "oauth_timestamp", Value: strconv.FormatInt(time.Now().Unix(), 10)})
-	nounce, err := rand.Int(rand.Reader,big.NewInt(math.MaxInt64))
-	if err != nil{
-	  return nil, err
+	nounce, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
+	if err != nil {
+		return nil, err
 	}
 	p.Add(&Pair{Key: "oauth_nonce", Value: nounce.String()})
 	p.Add(&Pair{Key: "oauth_version", Value: "1.0"})
@@ -302,26 +302,23 @@ func (oc *OAuthConsumer) PostFile(url string, fparams Params,files map[string]Po
 	sort.Sort(p)
 
 	// Generate string of sorted params
-	sigBaseCol := make([]string, len(p) + len(fparams))
+	sigBaseCol := make([]string, len(p)+len(fparams))
 	for i := range p {
 		sigBaseCol[i] = Encode(p[i].Key) + "=" + Encode(p[i].Value)
 	}
 
-
-
 	sigBaseStr := "POST" + "&" +
 		Encode(url) + "&"
-		
-  temp := ""
-	for i := range sigBaseCol{
-    temp += sigBaseCol[i]
-    if i < len(sigBaseCol)-2 {
-      temp += "&"
-    }
+
+	temp := ""
+	for i := range sigBaseCol {
+		temp += sigBaseCol[i]
+		if i < len(sigBaseCol)-2 {
+			temp += "&"
+		}
 	}
 
 	sigBaseStr = sigBaseStr + Encode(temp)
-
 
 	sigBaseStr = strings.Replace(sigBaseStr, Encode(Encode(at.Token)), Encode(at.Token), 1)
 
@@ -345,35 +342,35 @@ func (oc *OAuthConsumer) PostFile(url string, fparams Params,files map[string]Po
 	authHeader = strings.Replace(authHeader, Encode(at.Token), at.Token, 1)
 	// Add Header & Buffer for params
 
-  buf := new(bytes.Buffer)
-  w := multipart.NewWriter(buf)
+	buf := new(bytes.Buffer)
+	w := multipart.NewWriter(buf)
 
-  for i := range fparams {
-   k, v := fparams[i].Key, fparams[i].Value
-      ff, err := w.CreateFormField(k)
-      if err != nil {
-        return nil, err
-      }
-      ff.Write([]byte(v))
-  }
-  
-  for k,v := range files{
-    fw, err := w.CreateFormFile(k, v.Name)
-    if err != nil {
-        return nil, err
-      }
-      _, err = io.Copy(fw, v.Reader)
-     if err != nil {
-        return nil, err
-     }
-  }
-  w.Close()
+	for i := range fparams {
+		k, v := fparams[i].Key, fparams[i].Value
+		ff, err := w.CreateFormField(k)
+		if err != nil {
+			return nil, err
+		}
+		ff.Write([]byte(v))
+	}
 
-  headers := map[string]string{
-  	"Authorization": authHeader,
-  	"User-Agent":    oc.UserAgent,
-  	"Content-Type":  w.FormDataContentType(),
-  }
+	for k, v := range files {
+		fw, err := w.CreateFormFile(k, v.Name)
+		if err != nil {
+			return nil, err
+		}
+		_, err = io.Copy(fw, v.Reader)
+		if err != nil {
+			return nil, err
+		}
+	}
+	w.Close()
+
+	headers := map[string]string{
+		"Authorization": authHeader,
+		"User-Agent":    oc.UserAgent,
+		"Content-Type":  w.FormDataContentType(),
+	}
 
 	// return POSTs response
 	return post(url, headers, buf, oc.Timeout, buf.Len())
@@ -392,11 +389,11 @@ func (oc *OAuthConsumer) oAuthRequest(url string, fparams Params, at *AccessToke
 	p.Add(&Pair{Key: "oauth_signature_method", Value: "HMAC-SHA1"})
 	p.Add(&Pair{Key: "oauth_consumer_key", Value: oc.ConsumerKey})
 	p.Add(&Pair{Key: "oauth_timestamp", Value: strconv.FormatInt(time.Now().Unix(), 10)})
-	nounce, err := rand.Int(rand.Reader,big.NewInt(math.MaxInt64))
-	if err != nil{
-	  return nil, err
+	nounce, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
+	if err != nil {
+		return nil, err
 	}
-	
+
 	p.Add(&Pair{Key: "oauth_nonce", Value: nounce.String()})
 	p.Add(&Pair{Key: "oauth_version", Value: "1.0"})
 
@@ -406,14 +403,14 @@ func (oc *OAuthConsumer) oAuthRequest(url string, fparams Params, at *AccessToke
 	}
 
 	fplist := make([]string, 0)
-        // Add any additional params passed
-        for i := range fparams {
-                k, v := fparams[i].Key, fparams[i].Value
-                p.Add(&Pair{Key: k, Value: v})
+	// Add any additional params passed
+	for i := range fparams {
+		k, v := fparams[i].Key, fparams[i].Value
+		p.Add(&Pair{Key: k, Value: v})
 		fplist = append(fplist, k+"="+Encode(v))
-        }
+	}
 	fparamsStr := strings.Join(fplist, "&")
-	
+
 	// Sort the collection
 	sort.Sort(p)
 
@@ -440,14 +437,14 @@ func (oc *OAuthConsumer) oAuthRequest(url string, fparams Params, at *AccessToke
 	sort.Sort(hp)
 
 	// Build Auth Header
-	authHeaders := make([]string,0)
+	authHeaders := make([]string, 0)
 	for i := range hp {
 		if strings.Index(hp[i].Key, "oauth") == 0 {
 			//Add it to the authHeader
-			authHeaders = append(authHeaders, hp[i].Key + "=\"" + Encode(hp[i].Value) + "\"")
+			authHeaders = append(authHeaders, hp[i].Key+"=\""+Encode(hp[i].Value)+"\"")
 		}
 	}
-	authHeader := "OAuth " + strings.Join(authHeaders,", ")
+	authHeader := "OAuth " + strings.Join(authHeaders, ", ")
 
 	authHeader = strings.Replace(authHeader, Encode(at.Token), at.Token, 1)
 
@@ -462,10 +459,10 @@ func (oc *OAuthConsumer) oAuthRequest(url string, fparams Params, at *AccessToke
 		// return Get response
 		return get(url+"?"+fparamsStr, headers, oc.Timeout)
 	}
-	
+
 	headers["Content-Type"] = "application/x-www-form-urlencoded"
 	// return POSTs response
-	return post(url, headers, buf, oc.Timeout,buf.Len())
+	return post(url, headers, buf, oc.Timeout, buf.Len())
 
 }
 

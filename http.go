@@ -1,11 +1,11 @@
 package oauth
 
 import (
+	"bufio"
+	"crypto/tls"
 	"io"
 	"net"
 	"net/http"
-	"bufio"
-	"crypto/tls"
 	"strings"
 	"time"
 )
@@ -75,7 +75,7 @@ type TimeoutReaderCloser struct {
 	T int64
 }
 
-func(r *TimeoutReaderCloser) Read(b []byte) (int, error) {
+func (r *TimeoutReaderCloser) Read(b []byte) (int, error) {
 	size, err := r.R.Read(b)
 	if err != nil {
 		return size, err
@@ -112,7 +112,7 @@ func send(req *http.Request, timeout int64) (resp *http.Response, err error) {
 	var conn net.Conn
 	if req.URL.Scheme == "http" {
 		if timeout > 0 {
-			conn, err = net.DialTimeout("tcp", addr, time.Duration(timeout * 1e9))
+			conn, err = net.DialTimeout("tcp", addr, time.Duration(timeout*1e9))
 		} else {
 			conn, err = net.Dial("tcp", addr)
 		}

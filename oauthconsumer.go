@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"crypto/rand"
-  "math/big"
-  "math"
+  	"math/big"
+  	"math"
 	"net/http"
 	"sort"
 	"strconv"
@@ -396,6 +396,7 @@ func (oc *OAuthConsumer) oAuthRequest(url string, fparams Params, at *AccessToke
 	if err != nil{
 	  return nil, err
 	}
+	
 	p.Add(&Pair{Key: "oauth_nonce", Value: nounce.String()})
 	p.Add(&Pair{Key: "oauth_version", Value: "1.0"})
 
@@ -404,14 +405,15 @@ func (oc *OAuthConsumer) oAuthRequest(url string, fparams Params, at *AccessToke
 		hp.Add(&Pair{Key: p[i].Key, Value: p[i].Value})
 	}
 
-	fparamsStr := ""
-	// Add any additional params passed
-	for i := range fparams {
-		k, v := fparams[i].Key, fparams[i].Value
-		p.Add(&Pair{Key: k, Value: v})
-		fparamsStr += k + "=" + Encode(v) + "&"
-	}
-
+	fplist := make([]string, 0)
+        // Add any additional params passed
+        for i := range fparams {
+                k, v := fparams[i].Key, fparams[i].Value
+                p.Add(&Pair{Key: k, Value: v})
+		fplist = append(fplist, k+"="+Encode(v))
+        }
+	fparamsStr := strings.Join(fplist, "&")
+	
 	// Sort the collection
 	sort.Sort(p)
 
@@ -433,17 +435,19 @@ func (oc *OAuthConsumer) oAuthRequest(url string, fparams Params, at *AccessToke
 	// Generate Signature
 	d := oc.digest(key, sigBaseStr)
 
+	// Add the signature
+	hp.Add(&Pair{Key: "oauth_signature", Value: d})
+	sort.Sort(hp)
+
 	// Build Auth Header
-	authHeader := "OAuth "
+	authHeaders := make([]string,0)
 	for i := range hp {
 		if strings.Index(hp[i].Key, "oauth") == 0 {
 			//Add it to the authHeader
-			authHeader += hp[i].Key + "=\"" + Encode(hp[i].Value) + "\", "
+			authHeaders = append(authHeaders, hp[i].Key + "=\"" + Encode(hp[i].Value) + "\"")
 		}
 	}
-
-	// Add the signature
-	authHeader += "oauth_signature=\"" + Encode(d) + "\""
+	authHeader := "OAuth " + strings.Join(authHeaders,", ")
 
 	authHeader = strings.Replace(authHeader, Encode(at.Token), at.Token, 1)
 
@@ -458,7 +462,8 @@ func (oc *OAuthConsumer) oAuthRequest(url string, fparams Params, at *AccessToke
 		// return Get response
 		return get(url+"?"+fparamsStr, headers, oc.Timeout)
 	}
-
+	
+	headers["Content-Type"] = "application/x-www-form-urlencoded"
 	// return POSTs response
 	return post(url, headers, buf, oc.Timeout,buf.Len())
 

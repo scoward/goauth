@@ -124,7 +124,9 @@ func send(req *http.Request, timeout int64) (resp *http.Response, err error) {
 		return nil, err
 	}
 
-	conn.SetReadDeadline(time.Now().Add(time.Duration(timeout)))
+	if timeout > 0 {
+		conn.SetReadDeadline(time.Now().Add(time.Duration(timeout)))
+	}
 
 	err = req.Write(conn)
 	if err != nil {

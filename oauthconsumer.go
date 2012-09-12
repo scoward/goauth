@@ -19,8 +19,14 @@ import (
 	"time"
 )
 
+const (
+	TWOLEGGED   int = 1
+	THREELEGGED int = 2
+)
+
 type OAuthConsumer struct {
 	Service          string
+	Type             int //TWOLEGGEd or THREELEGGED
 	RequestTokenURL  string
 	AccessTokenURL   string
 	AuthorizationURL string
@@ -261,6 +267,9 @@ func (oc *OAuthConsumer) GetAccessToken(token string, verifier string) *AccessTo
 
 // OAuthRequestGet return the response via a GET for the url with the AccessToken passed
 func (oc *OAuthConsumer) Get(url string, fparams Params, at *AccessToken) (r *http.Response, err error) {
+	if oc.Type == TWOLEGGED {
+
+	}
 	return oc.oAuthRequest(url, fparams, at, "GET")
 }
 
@@ -385,7 +394,9 @@ func (oc *OAuthConsumer) oAuthRequest(url string, fparams Params, at *AccessToke
 	hp := Params{}
 
 	// Add required OAuth params
-	p.Add(&Pair{Key: "oauth_token", Value: at.Token})
+	if at != nil {
+		p.Add(&Pair{Key: "oauth_token", Value: at.Token})
+	}
 	p.Add(&Pair{Key: "oauth_signature_method", Value: "HMAC-SHA1"})
 	p.Add(&Pair{Key: "oauth_consumer_key", Value: oc.ConsumerKey})
 	p.Add(&Pair{Key: "oauth_timestamp", Value: strconv.FormatInt(time.Now().Unix(), 10)})
@@ -420,15 +431,22 @@ func (oc *OAuthConsumer) oAuthRequest(url string, fparams Params, at *AccessToke
 		sigBaseCol[i] = Encode(p[i].Key) + "=" + Encode(p[i].Value)
 	}
 
-	sigBaseStr := method + "&" +
-		Encode(url) + "&" +
-		Encode(strings.Join(sigBaseCol, "&"))
+	var key, sigBaseStr string
+	if oc.Type == TWOLEGGED {
+		sigBaseStr = Encode(url) + "&" +
+			Encode(strings.Join(sigBaseCol, "&"))
+		// Generate Composite Signing key
+		key = Encode(oc.ConsumerSecret)
+	} else {
+		sigBaseStr = method + "&" +
+			Encode(url) + "&" +
+			Encode(strings.Join(sigBaseCol, "&"))
 
-	sigBaseStr = strings.Replace(sigBaseStr, Encode(Encode(at.Token)), Encode(at.Token), 1)
+		sigBaseStr = strings.Replace(sigBaseStr, Encode(Encode(at.Token)), Encode(at.Token), 1)
 
-	// Generate Composite Signing key
-	key := Encode(oc.ConsumerSecret) + "&" + at.Secret
-
+		// Generate Composite Signing key
+		key = Encode(oc.ConsumerSecret) + "&" + at.Secret
+	}
 	// Generate Signature
 	d := oc.digest(key, sigBaseStr)
 
@@ -446,7 +464,9 @@ func (oc *OAuthConsumer) oAuthRequest(url string, fparams Params, at *AccessToke
 	}
 	authHeader := "OAuth " + strings.Join(authHeaders, ", ")
 
-	authHeader = strings.Replace(authHeader, Encode(at.Token), at.Token, 1)
+	if oc.Type != TWOLEGGED {
+		authHeader = strings.Replace(authHeader, Encode(at.Token), at.Token, 1)
+	}
 
 	// Add Header & Buffer for params
 	buf := bytes.NewBufferString(fparamsStr)

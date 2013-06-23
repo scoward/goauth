@@ -398,7 +398,9 @@ func (oc *OAuthConsumer) oAuthRequest(url string, fparams Params, at *AccessToke
 		p.Add(&Pair{Key: "oauth_token", Value: at.Token})
 	}
 	p.Add(&Pair{Key: "oauth_signature_method", Value: "HMAC-SHA1"})
-	p.Add(&Pair{Key: "oauth_consumer_key", Value: oc.ConsumerKey})
+    if oc != nil {
+        p.Add(&Pair{Key: "oauth_consumer_key", Value: oc.ConsumerKey})
+    }
 	p.Add(&Pair{Key: "oauth_timestamp", Value: strconv.FormatInt(time.Now().Unix(), 10)})
 	nounce, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
